@@ -1,10 +1,11 @@
 {
   "version": "2.0.0",
-  "name": "SyncAccesible v2.0.0",
-  "date": "2026-11-11",
-  "url": "https://github.com/joseonce/sync-accesible/releases/download/v2.0.0/SyncAccesible_v2.0.zip",
+  "name": "SynthAccess v2.0.0",
+  "date": "2026-11-17",
+  "url": "https://github.com/joseonce/synthaccess/releases/download/v2.0.0/SynthAccess_v2.0.zip",
   "changelog": [
-    "Soporte universal para lectores de pantalla: NVDA, JAWS (FreedomSci.JawsApi COM) y Dolphin SuperNova.",
+    "Nuevo nombre simplificado: SynthAccess.",
+    "Soporte universal para lectores de pantalla: NVDA, JAWS (FreedomSci.JawsApi COM), Dolphin SuperNova y Narrador de Windows con lectura garantizada de columnas.",
     "Ficha de atributos accesible (Ctrl+D o F2) para explorar todas las columnas y metadatos con flechas arriba/abajo.",
     "Sistema de actualizacion automatica segura y transaccional con conservacion de configuracion (Ctrl+U).",
     "Alertas sonoras y porcentaje por voz cada 25% durante comparaciones y sincronizaciones.",
@@ -12,4 +13,3 @@
     "Exportacion de informes de sincronizacion y comparacion a texto plano con Ctrl+P."
   ]
 }
-

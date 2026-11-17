@@ -1,5 +1,5 @@
 ========================================================================
-SyncAccesible v2.0 - Sincronizador Gráfico Ultraligero y 100% Accesible
+SynthAccess v2.0 - Sincronizador Gráfico Ultraligero y 100% Accesible
 ========================================================================
 
 Autor y Desarrollador: José Manuel Fernández Cortés
@@ -7,7 +7,7 @@ Año: 2026
 Licencia: Software Libre y Gratuito
 
 INSTRUCCIONES DE USO:
-1. No requiere instalación. Ejecute directamente "SyncAccesible.exe".
+1. No requiere instalación. Ejecute directamente "SynthAccess.exe" (o "SyncAccesible.exe").
 2. Para consultar el manual completo accesible, abra "MANUAL.html" o
    pulse la tecla F1 dentro de la aplicación.
 3. Para ver la lista completa de atajos de teclado, pulse Shift + F1.
@@ -17,4 +17,3 @@ INSTRUCCIONES DE USO:
 6. Compatible con NVDA, JAWS, Dolphin SuperNova y Narrador de Windows.
 
 ========================================================================
-

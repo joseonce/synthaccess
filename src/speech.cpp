@@ -64,7 +64,12 @@ static bool JawsComSpeak(const std::wstring& text, bool interrupt) {
         DISPATCH_METHOD, &params, &vResult, nullptr, nullptr);
     SysFreeString(args[1].bstrVal);
 
-    bool spoken = SUCCEEDED(hr) && (vResult.vt == VT_BOOL) && (vResult.boolVal == VARIANT_TRUE);
+    bool spoken = SUCCEEDED(hr);
+    if (spoken && vResult.vt == VT_BOOL) {
+        spoken = (vResult.boolVal == VARIANT_TRUE);
+    } else if (spoken && (vResult.vt == VT_I4 || vResult.vt == VT_UI4)) {
+        spoken = (vResult.lVal != 0);
+    }
     VariantClear(&vResult);
     pJaws->Release();
     return spoken;
@@ -242,9 +247,10 @@ void Speak(const std::wstring& text, bool interrupt, HWND /*hwndTarget*/) {
                 spoken = true;
             }
 
-            // 4. SAPI 5 — solo cuando no hay ningún lector de pantalla activo
-            //    (Narrador usa g_hLiveRegion en gui.cpp, no SAPI)
-            if (!spoken && !IsNvdaActive() && !IsJawsActive() && !IsNarratorActive()) {
+            // 4. SAPI 5 — si ningún lector específico pudo hablar por API directa
+            //    (o si el usuario utiliza Narrador de Windows u otro lector sin API dedicada),
+            //    se usa la voz SAPI del sistema para garantizar feedback sonoro siempre.
+            if (!spoken) {
                 SapiSpeak(text, interrupt);
             }
         }

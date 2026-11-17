@@ -449,7 +449,7 @@ bool ShowSettingsDialog(HWND hwndParent, AppSettings& settings) {
     HWND hwndDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"SyncSettingsDialogClass",
-        L"Configuracion General - SyncAccesible",
+        L"Configuracion General - SynthAccess",
         WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
         x, y, w, h,
         hwndParent,
@@ -1022,7 +1022,7 @@ static LRESULT CALLBACK AboutDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
             );
 
-            HWND hTitle = CreateWindowExW(0, L"STATIC", L"SyncAccesible (Versión 2.0 Nativa C++)", WS_CHILD | WS_VISIBLE, 20, 18, 460, 26, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
+            HWND hTitle = CreateWindowExW(0, L"STATIC", L"SynthAccess (Versión 2.0 Nativa C++)", WS_CHILD | WS_VISIBLE, 20, 18, 460, 26, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
             SendMessageW(hTitle, WM_SETFONT, (WPARAM)hBoldFont, TRUE);
 
             std::wstring aboutText =
@@ -1039,7 +1039,7 @@ static LRESULT CALLBACK AboutDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
             SendMessageW(hBtn, WM_SETFONT, (WPARAM)hFont, TRUE);
             SetFocus(hBtn);
 
-            Speech::Speak(L"Acerca de SyncAccesible. Autor y desarrollador: José Manuel Fernández Cortés.");
+            Speech::Speak(L"Acerca de SynthAccess. Autor y desarrollador: José Manuel Fernández Cortés.");
             return 0;
         }
         case WM_COMMAND: {
@@ -1083,7 +1083,7 @@ void ShowAboutDialog(HWND hwndParent) {
     HWND hwndDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"SyncAboutDialogClass",
-        L"Acerca de SyncAccesible",
+        L"Acerca de SynthAccess",
         WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
         x, y, w, h,
         hwndParent,
@@ -1129,7 +1129,7 @@ static LRESULT CALLBACK ManualDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             }
             if (manualContent.empty()) {
                 manualContent =
-                    L"MANUAL DE USUARIO - SYNCACCESIBLE\r\n"
+                    L"MANUAL DE USUARIO - SYNTHACCESS\r\n"
                     L"Autor y Desarrollador: José Manuel Fernández Cortés\r\n"
                     L"Versión 2.0 (C++ Nativo)\r\n\r\n"
                     L"Consulte el archivo MANUAL.md incluido con la aplicación para más detalles.";
@@ -1172,7 +1172,7 @@ static LRESULT CALLBACK ManualDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
             SetFocus(hEdit);
 
-            Speech::Speak(L"Manual de usuario de SyncAccesible. Autor: José Manuel Fernández Cortés.");
+            Speech::Speak(L"Manual de usuario de SynthAccess. Autor: José Manuel Fernández Cortés.");
             return 0;
         }
         case WM_COMMAND: {
@@ -1218,7 +1218,7 @@ void ShowManualDialog(HWND hwndParent) {
     HWND hwndDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"SyncManualDialogClass",
-        L"Manual de Usuario - SyncAccesible (Autor: José Manuel Fernández Cortés)",
+        L"Manual de Usuario - SynthAccess (Autor: José Manuel Fernández Cortés)",
         WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
         x, y, w, h,
         hwndParent,
@@ -1368,7 +1368,7 @@ static LRESULT CALLBACK ShortcutsDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI"
             );
 
-            HWND hTitle = CreateWindowExW(0, L"STATIC", L"Atajos de Teclado de SyncAccesible", WS_CHILD | WS_VISIBLE, 15, 12, 500, 24, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
+            HWND hTitle = CreateWindowExW(0, L"STATIC", L"Atajos de Teclado de SynthAccess", WS_CHILD | WS_VISIBLE, 15, 12, 500, 24, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
             SendMessageW(hTitle, WM_SETFONT, (WPARAM)hBoldFont, TRUE);
 
             HWND hDesc = CreateWindowExW(0, L"STATIC", L"Navegue con Flechas Arriba/Abajo. Con Flechas Izquierda/Derecha escuche cada celda. Pulse Alt+C para copiar la lista.", WS_CHILD | WS_VISIBLE, 15, 38, 750, 20, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
@@ -1425,7 +1425,7 @@ static LRESULT CALLBACK ShortcutsDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
             }
             SetFocus(hList);
 
-            Speech::Speak(L"Atajos de Teclado de SyncAccesible. 26 atajos disponibles. Use flechas arriba y abajo para navegar.");
+            Speech::Speak(L"Atajos de Teclado de SynthAccess. 26 atajos disponibles. Use flechas arriba y abajo para navegar.");
             return 0;
         }
         case WM_NOTIFY: {
@@ -1445,14 +1445,14 @@ static LRESULT CALLBACK ShortcutsDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
         case WM_COMMAND: {
             int id = LOWORD(wParam);
             if (id == IDC_SHORTCUTS_COPY) {
-                std::wstring fullList = L"=== ATAJOS DE TECLADO - SYNCACCESIBLE ===\r\n";
+                std::wstring fullList = L"=== ATAJOS DE TECLADO - SYNTHACCESS ===\r\n";
                 fullList += L"Autor: José Manuel Fernández Cortés\r\n\r\n";
                 for (size_t i = 0; i < sizeof(g_allShortcuts) / sizeof(g_allShortcuts[0]); ++i) {
                     fullList += std::wstring(g_allShortcuts[i].key) + L" -> " + g_allShortcuts[i].action + L"\r\n";
                 }
                 CopyTextToClipboard(hwnd, fullList);
                 Speech::Speak(L"Todos los atajos de teclado han sido copiados al portapapeles.");
-                MessageBoxW(hwnd, L"Lista de atajos copiada al portapapeles con éxito.", L"SyncAccesible", MB_OK | MB_ICONINFORMATION);
+                MessageBoxW(hwnd, L"Lista de atajos copiada al portapapeles con éxito.", L"SynthAccess", MB_OK | MB_ICONINFORMATION);
             } else if (id == IDC_SHORTCUTS_HTML) {
                 OpenManualHtml(hwnd);
             } else if (id == IDOK || id == IDCANCEL) {
@@ -1494,7 +1494,7 @@ void ShowShortcutsDialog(HWND hwndParent) {
     HWND hwndDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"SyncShortcutsDialogClass",
-        L"Atajos de Teclado - SyncAccesible (Autor: José Manuel Fernández Cortés)",
+        L"Atajos de Teclado - SynthAccess (Autor: José Manuel Fernández Cortés)",
         WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
         x, y, w, h,
         hwndParent,
@@ -1667,7 +1667,7 @@ static LRESULT CALLBACK ItemPropertiesDlgProc(HWND hwnd, UINT msg, WPARAM wParam
                     }
                     CopyTextToClipboard(hwnd, fullText);
                     Speech::Speak(L"Ficha de atributos copiada al portapapeles.");
-                    MessageBoxW(hwnd, L"Ficha de atributos copiada al portapapeles con éxito.", L"SyncAccesible", MB_OK | MB_ICONINFORMATION);
+                    MessageBoxW(hwnd, L"Ficha de atributos copiada al portapapeles con éxito.", L"SynthAccess", MB_OK | MB_ICONINFORMATION);
                 }
             } else if (id == IDOK || id == IDCANCEL) {
                 DestroyWindow(hwnd);
@@ -1768,7 +1768,7 @@ static LRESULT CALLBACK UpdateDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             );
 
             // Header box
-            HWND hTitle = CreateWindowExW(0, L"STATIC", L"¡Hay una nueva versión disponible de SyncAccesible!", WS_CHILD | WS_VISIBLE, 15, 12, 540, 24, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
+            HWND hTitle = CreateWindowExW(0, L"STATIC", L"¡Hay una nueva versión disponible de SynthAccess!", WS_CHILD | WS_VISIBLE, 15, 12, 540, 24, hwnd, nullptr, GetModuleHandleW(nullptr), nullptr);
             SendMessageW(hTitle, WM_SETFONT, (WPARAM)hBoldFont, TRUE);
 
             std::wstring verText = L"• Versión disponible: v" + pData->info.version + (pData->info.date.empty() ? L"" : L" (" + pData->info.date + L")") +
@@ -1832,7 +1832,7 @@ static LRESULT CALLBACK UpdateDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
             SetFocus(pData->hBtnUpdate);
 
-            std::wstring announce = L"Nueva versión " + pData->info.version + L" disponible de SyncAccesible. Tu versión actual es " + std::wstring(Updater::APP_VERSION) + L". Pulse Actualizar ahora o tabulador para ver las novedades.";
+            std::wstring announce = L"Nueva versión " + pData->info.version + L" disponible de SynthAccess. Tu versión actual es " + std::wstring(Updater::APP_VERSION) + L". Pulse Actualizar ahora o tabulador para ver las novedades.";
             Speech::Speak(announce);
             return 0;
         }
@@ -1858,13 +1858,13 @@ static LRESULT CALLBACK UpdateDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
             SetWindowTextW(pData->hStatus, L"¡Descarga completada! Preparando la actualización...");
             EnableWindow(pData->hBtnCancel, FALSE);
 
-            std::wstring msg = L"La nueva versión de SyncAccesible se ha descargado correctamente.\n\n"
+            std::wstring msg = L"La nueva versión de SynthAccess se ha descargado correctamente.\n\n"
                                L"La aplicación se cerrará ahora para actualizar los archivos.\n"
-                               L"Al finalizar, SyncAccesible se reiniciará automáticamente.\n"
+                               L"Al finalizar, SynthAccess se reiniciará automáticamente.\n"
                                L"Si ocurriese cualquier fallo, se restaurará la versión anterior.";
 
             Speech::Speak(L"Descarga completada con éxito. La aplicación se cerrará para aplicar la actualización y se reiniciará automáticamente.");
-            MessageBoxW(hwnd, msg.c_str(), L"Actualización Descargada - SyncAccesible", MB_OK | MB_ICONINFORMATION);
+            MessageBoxW(hwnd, msg.c_str(), L"Actualización Descargada - SynthAccess", MB_OK | MB_ICONINFORMATION);
 
             DestroyWindow(hwnd);
             Updater::LaunchPortableUpdater(tempZip, hwnd);
@@ -1975,7 +1975,7 @@ void ShowUpdateDialog(HWND hwndParent, const void* pUpdateInfo) {
     HWND hwndDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"SyncUpdateDialogClass",
-        L"Nueva Versión Disponible - SyncAccesible",
+        L"Nueva Versión Disponible - SynthAccess",
         WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
         x, y, w, h,
         hwndParent,

@@ -15,9 +15,9 @@ namespace fs = std::filesystem;
 namespace Updater {
 
 const wchar_t* APP_VERSION = L"2.0.0";
-const wchar_t* APP_NAME = L"SyncAccesible";
-static const wchar_t* CHECK_UPDATE_URL = L"https://raw.githubusercontent.com/joseonce/sync-accesible/main/version.json";
-static const wchar_t* FALLBACK_UPDATE_URL = L"https://api.github.com/repos/joseonce/sync-accesible/releases/latest";
+const wchar_t* APP_NAME = L"SynthAccess";
+static const wchar_t* CHECK_UPDATE_URL = L"https://raw.githubusercontent.com/joseonce/synthaccess/main/version.json";
+static const wchar_t* FALLBACK_UPDATE_URL = L"https://api.github.com/repos/joseonce/synthaccess/releases/latest";
 
 // Parse version strings like "2.0.0" or "v2.0.1" into 3 numbers
 static std::vector<int> ParseVersion(const std::wstring& verStr) {
@@ -50,7 +50,7 @@ static bool IsNewerVersion(const std::wstring& remoteVer, const std::wstring& lo
 }
 
 static std::string HttpGet(const std::wstring& url, std::wstring& errOut) {
-    HINTERNET hInternet = InternetOpenW(L"SyncAccesible-Updater/2.0", INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    HINTERNET hInternet = InternetOpenW(L"SynthAccess-Updater/2.0", INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
     if (!hInternet) {
         errOut = L"Error al inicializar WinINet.";
         return "";
@@ -145,7 +145,7 @@ bool DownloadUpdatePackage(
     std::atomic<bool>* cancelToken,
     std::wstring& outError
 ) {
-    HINTERNET hInternet = InternetOpenW(L"SyncAccesible-Downloader/2.0", INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
+    HINTERNET hInternet = InternetOpenW(L"SynthAccess-Downloader/2.0", INTERNET_OPEN_TYPE_PRECONFIG, nullptr, nullptr, 0);
     if (!hInternet) {
         outError = L"Error al inicializar WinINet.";
         return false;
@@ -278,8 +278,9 @@ try {
 Remove-Item -Path $backupDir -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path $WorkDir -Recurse -Force -ErrorAction SilentlyContinue
 
-# 6. Relaunch updated SyncAccesible.exe
-$exePath = Join-Path $TargetDir 'SyncAccesible.exe'
+# 6. Relaunch updated SynthAccess.exe
+$exePath = Join-Path $TargetDir 'SynthAccess.exe'
+if (-not (Test-Path $exePath)) { $exePath = Join-Path $TargetDir 'SyncAccesible.exe' }
 Start-Process -FilePath $exePath -WorkingDirectory $TargetDir
 )PS";
 
@@ -339,9 +340,9 @@ void CheckForUpdates(HWND hwndParent, bool silentIfUpToDate) {
             PostMessageW(hwndParent, WM_USER + 50, 0, (LPARAM)new UpdateInfo(info));
         } else {
             if (!silentIfUpToDate) {
-                std::wstring msg = L"SyncAccesible está actualizado a la última versión disponible (v" + std::wstring(APP_VERSION) + L").";
+                std::wstring msg = L"SynthAccess está actualizado a la última versión disponible (v" + std::wstring(APP_VERSION) + L").";
                 Speech::Speak(msg);
-                MessageBoxW(hwndParent, (msg + L"\nNo hay nuevas actualizaciones en este momento.").c_str(), L"SyncAccesible al día", MB_OK | MB_ICONINFORMATION);
+                MessageBoxW(hwndParent, (msg + L"\nNo hay nuevas actualizaciones en este momento.").c_str(), L"SynthAccess al día", MB_OK | MB_ICONINFORMATION);
             }
         }
     }).detach();

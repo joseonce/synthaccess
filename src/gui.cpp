@@ -17,6 +17,7 @@
 #include <vector>
 #include <filesystem>
 #include <algorithm>
+#include <UIAutomation.h>  // UiaRaiseNotificationEvent para Narrador de Windows
 
 #define WM_TRAYICON (WM_USER + 1)
 #define WM_SYNC_DONE (WM_USER + 2)
@@ -154,6 +155,42 @@ struct VirtualListState {
     int lastFocusedRow = -1;
 };
 
+// -----------------------------------------------------------------
+// AnnounceViaNarrator: usa UiaRaiseNotificationEvent (Win10 1703+)
+// para anunciar texto directamente al Narrador de Windows.
+// Debe llamarse desde el hilo de UI (message loop).
+// -----------------------------------------------------------------
+static void AnnounceViaNarrator(HWND hwndAnchor, const std::wstring& text) {
+    // Cargamos UIAutomationCore.dll dinámicamente para no romper en Win7
+    typedef HRESULT (WINAPI *PFN_UiaHostProviderFromHwnd)(HWND, IRawElementProviderSimple**);
+    typedef HRESULT (WINAPI *PFN_UiaRaiseNotificationEvent)(
+        IRawElementProviderSimple*,
+        NotificationKind,
+        NotificationProcessing,
+        BSTR, BSTR);
+
+    static HMODULE hUia = LoadLibraryW(L"UIAutomationCore.dll");
+    static PFN_UiaHostProviderFromHwnd  pfnHost   = hUia ? (PFN_UiaHostProviderFromHwnd) GetProcAddress(hUia, "UiaHostProviderFromHwnd")  : nullptr;
+    static PFN_UiaRaiseNotificationEvent pfnNotify = hUia ? (PFN_UiaRaiseNotificationEvent)GetProcAddress(hUia, "UiaRaiseNotificationEvent") : nullptr;
+
+    if (!pfnHost || !pfnNotify || !hwndAnchor) return;
+
+    IRawElementProviderSimple* pProvider = nullptr;
+    if (SUCCEEDED(pfnHost(hwndAnchor, &pProvider)) && pProvider) {
+        BSTR bText = SysAllocString(text.c_str());
+        BSTR bId   = SysAllocString(L"SyncAccesibleColumnAnnounce");
+        // NotificationKind_Other + NotificationProcessing_ImportantAll:
+        // el Narrador interrumpe la locución actual y lee 'text' inmediatamente.
+        pfnNotify(pProvider,
+                  NotificationKind_Other,
+                  NotificationProcessing_ImportantAll,
+                  bText, bId);
+        SysFreeString(bText);
+        SysFreeString(bId);
+        pProvider->Release();
+    }
+}
+
 static void AnnounceVirtualColumn(HWND hList, int rowIndex, int colIndex, bool isBoundary, bool isStart) {
     if (rowIndex < 0 || colIndex < 0) return;
 
@@ -256,14 +293,15 @@ static void AnnounceVirtualColumn(HWND hList, int rowIndex, int colIndex, bool i
         NotifyWinEvent(EVENT_OBJECT_NAMECHANGE, g_hStatusBar, OBJID_CLIENT, CHILDID_SELF);
     }
 
-    // --- Región en vivo para Narrador (control EDIT oculto fuera de pantalla) ---
-    // El Narrador monitorea cambios de texto en controles accesibles con foco.
-    // Ponemos el texto en g_hLiveRegion y le enviamos EVENT_OBJECT_NAMECHANGE,
-    // lo que fuerza al Narrador a leer el nuevo contenido sin mover el foco real.
+    // --- Región en vivo para Narrador (UiaRaiseNotificationEvent, Win10 1703+) ---
+    // Llamamos desde el hilo de UI con el HWND de la lista como ancla.
+    // Esto funciona con Narrador, JAWS (vía UIA) y otros clientes UIA.
+    AnnounceViaNarrator(hList, speech);
+
+    // --- Región en vivo fallback (control EDIT oculto) para lectores que
+    //     monitorizan EVENT_OBJECT_NAMECHANGE (p.ej. versiones antiguas) ---
     if (g_hLiveRegion) {
-        // Cambiar texto del control oculto
         SetWindowTextW(g_hLiveRegion, speech.c_str());
-        // Disparar evento de cambio de nombre/valor accesible
         NotifyWinEvent(EVENT_OBJECT_VALUECHANGE, g_hLiveRegion, OBJID_CLIENT, CHILDID_SELF);
         NotifyWinEvent(EVENT_OBJECT_NAMECHANGE,  g_hLiveRegion, OBJID_CLIENT, CHILDID_SELF);
     }
@@ -406,13 +444,7 @@ static void EnableVirtualColumnNavigation(HWND hList, UINT_PTR uIdSubclass) {
 }
 
 static void UpdateWindowTitle() {
-    std::wstring title = L"SyncAccesible (C++) - [";
-    title += g_currentProject.name;
-    if (!g_currentProject.file_path.empty()) {
-        title += L" - " + g_currentProject.file_path;
-    }
-    title += L"]";
-    SetWindowTextW(g_hwndMain, title.c_str());
+    SetWindowTextW(g_hwndMain, L"SynthAccess");
 }
 
 static void SaveAppConfig() {
@@ -1228,7 +1260,7 @@ static void ShowTrayContextMenu(HWND hwnd) {
     POINT pt;
     GetCursorPos(&pt);
     HMENU hMenu = CreatePopupMenu();
-    InsertMenuW(hMenu, 0, MF_BYPOSITION | MF_STRING, ID_TRAY_RESTORE, L"&Mostrar SyncAccesible");
+    InsertMenuW(hMenu, 0, MF_BYPOSITION | MF_STRING, ID_TRAY_RESTORE, L"&Mostrar SynthAccess");
     InsertMenuW(hMenu, 1, MF_BYPOSITION | MF_STRING, ID_TRAY_SYNC_ALL, L"Sincronizar &todas en serie ahora");
     InsertMenuW(hMenu, 2, MF_BYPOSITION | MF_STRING | (Scheduler::IsPaused() ? MF_CHECKED : MF_UNCHECKED), ID_TRAY_PAUSE, L"&Pausar programacion");
     InsertMenuW(hMenu, 3, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
@@ -1305,7 +1337,7 @@ static HMENU CreateAppMenuBar() {
     AppendMenuW(hMenuHelp, MF_STRING, IDM_HELP_SHORTCUTS, L"&Atajos de Teclado...\tShift+F1");
     AppendMenuW(hMenuHelp, MF_STRING, IDM_HELP_MANUAL, L"&Manual de Usuario (HTML)...\tF1");
     AppendMenuW(hMenuHelp, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(hMenuHelp, MF_STRING, IDM_HELP_ABOUT, L"&Acerca de SyncAccesible...");
+    AppendMenuW(hMenuHelp, MF_STRING, IDM_HELP_ABOUT, L"&Acerca de SynthAccess...");
     AppendMenuW(hMenuBar, MF_POPUP, (UINT_PTR)hMenuHelp, L"A&yuda");
 
     return hMenuBar;
@@ -1333,7 +1365,7 @@ static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
             g_nid.uCallbackMessage = WM_TRAYICON;
             g_nid.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
-            wcscpy_s(g_nid.szTip, L"SyncAccesible (C++)");
+            wcscpy_s(g_nid.szTip, L"SynthAccess");
             Shell_NotifyIconW(NIM_ADD, &g_nid);
 
             // Button bar
@@ -1841,7 +1873,7 @@ static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
                 detailMsg += L"2. Si es un archivo que no necesita sincronizar (por ejemplo, sync.ffs_db), agréguelo a las Exclusiones del par (Ctrl + E).\n";
                 detailMsg += L"3. Puede consultar todos los detalles en el menú Herramientas -> Ver Archivo de Registro (.log).";
 
-                MessageBoxW(hwnd, detailMsg.c_str(), L"SyncAccesible - Errores en la Sincronización", MB_OK | MB_ICONWARNING);
+                MessageBoxW(hwnd, detailMsg.c_str(), L"SynthAccess - Errores en la Sincronización", MB_OK | MB_ICONWARNING);
             }
             return 0;
         }
@@ -1886,7 +1918,7 @@ static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             if (lParam == WM_LBUTTONUP || lParam == WM_LBUTTONDBLCLK) {
                 ShowWindow(hwnd, SW_RESTORE);
                 SetForegroundWindow(hwnd);
-                Speech::Speak(L"SyncAccesible restaurado.");
+                Speech::Speak(L"SynthAccess restaurado.");
             } else if (lParam == WM_RBUTTONUP || lParam == WM_CONTEXTMENU) {
                 ShowTrayContextMenu(hwnd);
             }
@@ -1896,7 +1928,7 @@ static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         case WM_CLOSE: {
             if (g_settings.minimize_to_tray_on_close) {
                 ShowWindow(hwnd, SW_HIDE);
-                Speech::Speak(L"SyncAccesible sigue ejecutandose en la bandeja del sistema.");
+                Speech::Speak(L"SynthAccess sigue ejecutandose en la bandeja del sistema.");
             } else {
                 DestroyWindow(hwnd);
             }
@@ -1949,7 +1981,7 @@ int Run(HINSTANCE hInstance, int nCmdShow) {
     HWND hwnd = CreateWindowExW(
         0,
         L"SyncAccesibleMainWindowClass",
-        L"SyncAccesible (C++) - Sincronizador Grafico Accesible",
+        L"SynthAccess",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 960, 620,
         nullptr, nullptr, hInstance, nullptr
@@ -2069,7 +2101,7 @@ int Run(HINSTANCE hInstance, int nCmdShow) {
                 HWND hFocus = GetFocus();
                 if (hFocus == g_hListPairs || hFocus == g_hListPreview || msg.hwnd == hwnd) {
                     ShowWindow(hwnd, SW_HIDE);
-                    Speech::Speak(L"SyncAccesible minimizado a la bandeja del sistema.");
+                    Speech::Speak(L"SynthAccess minimizado a la bandeja del sistema.");
                     continue;
                 }
             }

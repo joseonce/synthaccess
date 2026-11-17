@@ -34,7 +34,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
     // Initialize Logger
     Logger::Initialize(dir);
-    LOG_INFO(L"Iniciando aplicación SyncAccesible 2.0");
+    LOG_INFO(L"Iniciando aplicación SynthAccess 2.0");
 
     // Initialize COM for Shell & SAPI
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -55,7 +55,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
     }
 
     CoUninitialize();
-    LOG_INFO(L"Cerrando aplicación SyncAccesible");
+    LOG_INFO(L"Cerrando aplicación SynthAccess");
     Logger::Shutdown();
     if (hSingleMutex) CloseHandle(hSingleMutex);
     return result;
