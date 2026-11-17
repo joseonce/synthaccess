@@ -9,7 +9,7 @@ namespace Speech {
 
 void Initialize();
 void Shutdown();
-void Speak(const std::wstring& text, bool interrupt = true);
+void Speak(const std::wstring& text, bool interrupt = true, HWND hwndTarget = nullptr);
 void PlayAlertSound();
 void StartWaitingBeep();
 void StopWaitingBeep();
@@ -19,6 +19,7 @@ bool IsEnabled();
 bool IsScreenReaderActive();
 bool IsJawsActive();
 bool IsNvdaActive();
+bool IsNarratorActive();
 
 } // namespace Speech
 

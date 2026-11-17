@@ -1289,8 +1289,9 @@ static const ShortcutDef g_allShortcuts[] = {
     { L"Ctrl + Shift + S",               L"Guardar Proyecto Como..." },
     { L"Ctrl + Shift + N",               L"Nuevo Proyecto limpio" },
     { L"Ctrl + Tab",                     L"Alternar entre Pestaña 1 y Pestaña 2" },
-    { L"Alt + 1 / Ctrl + 1",             L"Ir a la Pestaña 1 (Pares de Carpetas)" },
-    { L"Alt + 2 / Ctrl + 2",             L"Ir a la Pestaña 2 (Vista Previa de Sincronización)" },
+    { L"Alt + 1",                        L"Ir a la Pestaña 1 (Pares de Carpetas)" },
+    { L"Alt + 2",                        L"Ir a la Pestaña 2 (Vista Previa de Sincronización)" },
+    { L"Ctrl + 1 a Ctrl + 8",            L"Lectura directa de columna en listas (anuncia de inmediato la celda elegida)" },
     { L"Flecha Izquierda / Derecha",     L"Puntero Virtual de Columnas (anuncia celda por celda sin mover la fila)" },
     { L"Shift + F10 / Tecla Apps",       L"Abrir menú contextual del elemento seleccionado" },
     { L"Tab / Shift + Tab",              L"Desplazarse entre controles, listas y botones" },
@@ -1322,13 +1323,30 @@ static void CopyTextToClipboard(HWND hwnd, const std::wstring& text) {
 
 static LRESULT CALLBACK ShortcutsListSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_KEYDOWN) {
+        bool ctrlDown = (GetKeyState(VK_CONTROL) < 0);
+        bool altDown = (GetKeyState(VK_MENU) < 0);
+        bool shiftDown = (GetKeyState(VK_SHIFT) < 0);
+
+        if (ctrlDown && !altDown && !shiftDown) {
+            int sel = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
+            if (sel >= 0 && sel < (int)(sizeof(g_allShortcuts) / sizeof(g_allShortcuts[0]))) {
+                if (wParam == '1' || wParam == VK_NUMPAD1) {
+                    Speech::Speak(std::wstring(L"Atajo: ") + g_allShortcuts[sel].key, true, hwnd);
+                    return 0;
+                } else if (wParam == '2' || wParam == VK_NUMPAD2) {
+                    Speech::Speak(std::wstring(L"Función: ") + g_allShortcuts[sel].action, true, hwnd);
+                    return 0;
+                }
+            }
+        }
+
         if (wParam == VK_LEFT || wParam == VK_RIGHT) {
             int sel = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
             if (sel >= 0 && sel < (int)(sizeof(g_allShortcuts) / sizeof(g_allShortcuts[0]))) {
                 if (wParam == VK_LEFT) {
-                    Speech::Speak(std::wstring(L"Atajo: ") + g_allShortcuts[sel].key);
+                    Speech::Speak(std::wstring(L"Atajo: ") + g_allShortcuts[sel].key, true, hwnd);
                 } else {
-                    Speech::Speak(std::wstring(L"Función: ") + g_allShortcuts[sel].action);
+                    Speech::Speak(std::wstring(L"Función: ") + g_allShortcuts[sel].action, true, hwnd);
                 }
             }
             return 0;
@@ -1512,20 +1530,36 @@ static WNDPROC g_pOrigPropListProc = nullptr;
 
 static LRESULT CALLBACK PropListSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_KEYDOWN) {
-        if (wParam == VK_LEFT || wParam == VK_RIGHT) {
-            ItemPropertiesData* pData = (ItemPropertiesData*)GetWindowLongPtrW(GetParent(hwnd), GWLP_USERDATA);
-            if (pData) {
-                int sel = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
-                if (sel >= 0 && sel < (int)pData->properties.size()) {
-                    if (wParam == VK_LEFT) {
-                        Speech::Speak(L"Propiedad: " + pData->properties[sel].first);
-                    } else {
-                        Speech::Speak(L"Valor: " + pData->properties[sel].second);
+        bool ctrlDown = (GetKeyState(VK_CONTROL) < 0);
+        bool altDown = (GetKeyState(VK_MENU) < 0);
+        bool shiftDown = (GetKeyState(VK_SHIFT) < 0);
+
+        ItemPropertiesData* pData = (ItemPropertiesData*)GetWindowLongPtrW(GetParent(hwnd), GWLP_USERDATA);
+        if (pData) {
+            int sel = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
+            if (sel >= 0 && sel < (int)pData->properties.size()) {
+                if (ctrlDown && !altDown && !shiftDown) {
+                    if (wParam == '1' || wParam == VK_NUMPAD1) {
+                        Speech::Speak(L"Propiedad: " + pData->properties[sel].first, true, hwnd);
+                        return 0;
+                    } else if (wParam == '2' || wParam == VK_NUMPAD2) {
+                        Speech::Speak(L"Valor: " + pData->properties[sel].second, true, hwnd);
+                        return 0;
                     }
                 }
+
+                if (wParam == VK_LEFT || wParam == VK_RIGHT) {
+                    if (wParam == VK_LEFT) {
+                        Speech::Speak(L"Propiedad: " + pData->properties[sel].first, true, hwnd);
+                    } else {
+                        Speech::Speak(L"Valor: " + pData->properties[sel].second, true, hwnd);
+                    }
+                    return 0;
+                }
             }
-            return 0;
-        } else if (wParam == VK_ESCAPE) {
+        }
+
+        if (wParam == VK_ESCAPE) {
             PostMessageW(GetParent(hwnd), WM_COMMAND, MAKEWPARAM(IDCANCEL, 0), 0);
             return 0;
         }

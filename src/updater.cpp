@@ -318,7 +318,9 @@ Start-Process -FilePath $exePath -WorkingDirectory $TargetDir
 }
 
 void CheckForUpdates(HWND hwndParent, bool silentIfUpToDate) {
-    Speech::Speak(L"Comprobando actualizaciones...");
+    if (!silentIfUpToDate) {
+        Speech::Speak(L"Comprobando actualizaciones...");
+    }
     std::thread([hwndParent, silentIfUpToDate]() {
         UpdateInfo info;
         std::wstring err;

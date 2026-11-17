@@ -106,6 +106,7 @@ static HWND g_hListPairs = nullptr;
 static HWND g_hListPreview = nullptr;
 static HWND g_hStatusBar = nullptr;
 static HWND g_hProgressBar = nullptr;
+static HWND g_hLiveRegion = nullptr;   // Control anuncio en vivo para Narrador/UIA
 static int g_lastProgressMilestone = 0;
 static HFONT g_hFont = nullptr;
 static NOTIFYICONDATAW g_nid = { sizeof(NOTIFYICONDATAW) };
@@ -186,10 +187,42 @@ static void AnnounceVirtualColumn(HWND hList, int rowIndex, int colIndex, bool i
         swprintf_s(headerTitle, L"Columna %d", colIndex + 1);
     }
 
-    wchar_t cellValue[1024] = {0};
-    ListView_GetItemText(hList, rowIndex, colIndex, cellValue, 1024);
+    // Consulta del valor integro en memoria para superar el limite de truncado de SysListView32 (~260/511 caracteres)
+    std::wstring valStr;
+    if (hList == g_hListPairs && (size_t)rowIndex < g_currentProject.pairs.size()) {
+        const auto& p = g_currentProject.pairs[rowIndex];
+        switch (colIndex) {
+            case 0: valStr = p.name; break;
+            case 1: valStr = p.enabled ? L"Activa" : L"Desactivada"; break;
+            case 2: valStr = SyncModeToString(p.mode); break;
+            case 3: valStr = ScheduleTypeToString(p.schedule_type); break;
+            case 4: valStr = p.last_sync_status; break;
+            case 5: valStr = p.last_sync_time; break;
+            case 6: valStr = p.left_folder; break;
+            case 7: valStr = p.right_folder; break;
+            default: break;
+        }
+    } else if (hList == g_hListPreview && (size_t)rowIndex < g_previewDisplayedIndices.size()) {
+        size_t actualIdx = g_previewDisplayedIndices[rowIndex];
+        if (actualIdx < g_currentSummary.items.size()) {
+            const auto& item = g_currentSummary.items[actualIdx];
+            switch (colIndex) {
+                case 0: valStr = item.rel_path; break;
+                case 1: valStr = ActionTypeToString(item.action); break;
+                case 2: valStr = item.left_exists ? (item.is_dir ? L"<Carpeta>" : FormatFileSize(item.left_size)) : L"No existe"; break;
+                case 3: valStr = item.right_exists ? (item.is_dir ? L"<Carpeta>" : FormatFileSize(item.right_size)) : L"No existe"; break;
+                case 4: valStr = !item.error_msg.empty() ? item.error_msg : item.status; break;
+                default: break;
+            }
+        }
+    }
 
-    std::wstring valStr = cellValue;
+    if (valStr.empty()) {
+        wchar_t cellValue[2048] = {0};
+        ListView_GetItemText(hList, rowIndex, colIndex, cellValue, 2048);
+        valStr = cellValue;
+    }
+
     if (valStr.empty()) {
         valStr = L"vacío";
     }
@@ -217,13 +250,26 @@ static void AnnounceVirtualColumn(HWND hList, int rowIndex, int colIndex, bool i
         }
     }
 
+    // --- Barra de estado (siempre) ---
     if (g_hStatusBar) {
         SendMessageW(g_hStatusBar, SB_SETTEXTW, 0, (LPARAM)speech.c_str());
         NotifyWinEvent(EVENT_OBJECT_NAMECHANGE, g_hStatusBar, OBJID_CLIENT, CHILDID_SELF);
     }
 
-    Speech::Speak(speech, true);
-    NotifyWinEvent(EVENT_OBJECT_NAMECHANGE, hList, OBJID_CLIENT, rowIndex + 1);
+    // --- Región en vivo para Narrador (control EDIT oculto fuera de pantalla) ---
+    // El Narrador monitorea cambios de texto en controles accesibles con foco.
+    // Ponemos el texto en g_hLiveRegion y le enviamos EVENT_OBJECT_NAMECHANGE,
+    // lo que fuerza al Narrador a leer el nuevo contenido sin mover el foco real.
+    if (g_hLiveRegion) {
+        // Cambiar texto del control oculto
+        SetWindowTextW(g_hLiveRegion, speech.c_str());
+        // Disparar evento de cambio de nombre/valor accesible
+        NotifyWinEvent(EVENT_OBJECT_VALUECHANGE, g_hLiveRegion, OBJID_CLIENT, CHILDID_SELF);
+        NotifyWinEvent(EVENT_OBJECT_NAMECHANGE,  g_hLiveRegion, OBJID_CLIENT, CHILDID_SELF);
+    }
+
+    // --- NVDA / JAWS / SuperNova / SAPI ---
+    Speech::Speak(speech, true, hList);
 }
 
 static LRESULT CALLBACK VirtualColumnSubclassProc(
@@ -247,6 +293,48 @@ static LRESULT CALLBACK VirtualColumnSubclassProc(
             bool ctrlDown  = (GetKeyState(VK_CONTROL) < 0);
             bool altDown   = (GetKeyState(VK_MENU) < 0);
             bool shiftDown = (GetKeyState(VK_SHIFT) < 0);
+
+            // Lectura directa de columna con Ctrl+1 a Ctrl+9 (arquitectura AccessibleListCtrl)
+            if (ctrlDown && !altDown && !shiftDown) {
+                int targetCol = -1;
+                if (wParam >= '1' && wParam <= '9') {
+                    targetCol = (int)(wParam - '1');
+                } else if (wParam >= VK_NUMPAD1 && wParam <= VK_NUMPAD9) {
+                    targetCol = (int)(wParam - VK_NUMPAD1);
+                }
+
+                if (targetCol != -1) {
+                    int focusedRow = ListView_GetNextItem(hWnd, -1, LVNI_FOCUSED);
+                    if (focusedRow == -1) {
+                        focusedRow = ListView_GetNextItem(hWnd, -1, LVNI_SELECTED);
+                    }
+                    if (focusedRow == -1 && ListView_GetItemCount(hWnd) > 0) {
+                        focusedRow = 0;
+                        ListView_SetItemState(hWnd, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+                    }
+
+                    if (focusedRow != -1) {
+                        HWND hHeader = ListView_GetHeader(hWnd);
+                        int colCount = hHeader ? Header_GetItemCount(hHeader) : 0;
+                        if (colCount <= 0) {
+                            LVCOLUMNW testCol = {0};
+                            testCol.mask = LVCF_WIDTH;
+                            while (ListView_GetColumn(hWnd, colCount, &testCol)) {
+                                colCount++;
+                            }
+                        }
+
+                        if (targetCol < colCount) {
+                            pState->currentCol = targetCol;
+                            pState->lastFocusedRow = focusedRow;
+                            AnnounceVirtualColumn(hWnd, focusedRow, targetCol, false, false);
+                        } else {
+                            Speech::Speak(L"La columna no existe.", true);
+                        }
+                    }
+                    return 0; // Evento consumido
+                }
+            }
 
             if (!ctrlDown && !altDown && !shiftDown) {
                 if (wParam == VK_LEFT || wParam == VK_RIGHT) {
@@ -1319,6 +1407,21 @@ static LRESULT CALLBACK MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
             g_hStatusBar = CreateStatusWindowW(WS_CHILD | WS_VISIBLE, L"Listo.", hwnd, IDC_STATUSBAR);
             SendMessageW(g_hStatusBar, WM_SETFONT, (WPARAM)g_hFont, TRUE);
 
+            // Control de anuncio en vivo para Narrador de Windows (live region accesible)
+            // Se crea como EDIT de solo lectura, colocado fuera de pantalla (-2000,-2000)
+            // con tamaño visible mínimo (1x1) para que el subsistema de accesibilidad lo registre.
+            // Cuando se navegan columnas con flechas, se actualiza su texto y se dispara
+            // EVENT_OBJECT_NAMECHANGE, lo que fuerza al Narrador a leerlo inmediatamente.
+            g_hLiveRegion = CreateWindowExW(
+                0, L"EDIT", L"",
+                WS_CHILD | WS_VISIBLE | ES_READONLY | ES_AUTOHSCROLL,
+                -2000, -2000, 1, 1,
+                hwnd, (HMENU)1099, GetModuleHandleW(nullptr), nullptr
+            );
+            if (g_hLiveRegion) {
+                SendMessageW(g_hLiveRegion, WM_SETFONT, (WPARAM)g_hFont, TRUE);
+            }
+
             UpdatePairsList();
             UpdateWindowTitle();
 
@@ -1891,8 +1994,6 @@ int Run(HINSTANCE hInstance, int nCmdShow) {
         { FCONTROL | FSHIFT | FVIRTKEY, VK_TAB, IDM_VIEW_TAB_NEXT },
         { FALT | FVIRTKEY, '1', IDM_VIEW_TAB_PAIRS },
         { FALT | FVIRTKEY, '2', IDM_VIEW_TAB_PREVIEW },
-        { FCONTROL | FVIRTKEY, '1', IDM_VIEW_TAB_PAIRS },
-        { FCONTROL | FVIRTKEY, '2', IDM_VIEW_TAB_PREVIEW },
         { FCONTROL | FVIRTKEY, 'P', IDM_PROJECT_EXPORT_TXT },
         { FCONTROL | FVIRTKEY, 'H', IDM_VIEW_FILTER_CHANGES },
         { FALT | FVIRTKEY, 'O', IDM_VIEW_SORT_ACTION },
@@ -1953,11 +2054,17 @@ int Run(HINSTANCE hInstance, int nCmdShow) {
                 SwitchTab(1);
                 continue;
             } else if (ctrlDown && !altDown && !shiftDown && (msg.wParam == '1' || msg.wParam == VK_NUMPAD1)) {
-                SwitchTab(0);
-                continue;
+                HWND hFocus = GetFocus();
+                if (hFocus != g_hListPairs && hFocus != g_hListPreview && msg.hwnd != g_hListPairs && msg.hwnd != g_hListPreview) {
+                    SwitchTab(0);
+                    continue;
+                }
             } else if (ctrlDown && !altDown && !shiftDown && (msg.wParam == '2' || msg.wParam == VK_NUMPAD2)) {
-                SwitchTab(1);
-                continue;
+                HWND hFocus = GetFocus();
+                if (hFocus != g_hListPairs && hFocus != g_hListPreview && msg.hwnd != g_hListPairs && msg.hwnd != g_hListPreview) {
+                    SwitchTab(1);
+                    continue;
+                }
             } else if (msg.message == WM_KEYDOWN && msg.wParam == VK_ESCAPE && !ctrlDown && !altDown) {
                 HWND hFocus = GetFocus();
                 if (hFocus == g_hListPairs || hFocus == g_hListPreview || msg.hwnd == hwnd) {
@@ -1971,9 +2078,15 @@ int Run(HINSTANCE hInstance, int nCmdShow) {
         if (!TranslateAcceleratorW(hwnd, hAccel, &msg)) {
             bool bypassDialog = false;
             if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) {
-                if (msg.wParam == VK_LEFT || msg.wParam == VK_RIGHT) {
-                    HWND hFocus = GetFocus();
-                    if (hFocus == g_hListPairs || hFocus == g_hListPreview || msg.hwnd == g_hListPairs || msg.hwnd == g_hListPreview) {
+                HWND hFocus = GetFocus();
+                bool isList = (hFocus == g_hListPairs || hFocus == g_hListPreview || msg.hwnd == g_hListPairs || msg.hwnd == g_hListPreview);
+                if (isList) {
+                    bool isCtrl  = (GetKeyState(VK_CONTROL) < 0);
+                    bool isAlt   = (GetKeyState(VK_MENU) < 0);
+                    bool isShift = (GetKeyState(VK_SHIFT) < 0);
+                    if (msg.wParam == VK_LEFT || msg.wParam == VK_RIGHT) {
+                        bypassDialog = true;
+                    } else if (isCtrl && !isAlt && !isShift && ((msg.wParam >= '1' && msg.wParam <= '9') || (msg.wParam >= VK_NUMPAD1 && msg.wParam <= VK_NUMPAD9))) {
                         bypassDialog = true;
                     }
                 }
