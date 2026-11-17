@@ -28,8 +28,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-copy /Y SynthAccess.exe SyncAccesible.exe >nul
-
-echo [OK] Compilacion completada con exito: SynthAccess.exe y SyncAccesible.exe
+echo [OK] Compilacion completada con exito: SynthAccess.exe
 dir SynthAccess.exe
 

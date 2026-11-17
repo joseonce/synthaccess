@@ -7,7 +7,7 @@ Año: 2026
 Licencia: Software Libre y Gratuito
 
 INSTRUCCIONES DE USO:
-1. No requiere instalación. Ejecute directamente "SynthAccess.exe" (o "SyncAccesible.exe").
+1. No requiere instalación. Ejecute directamente "SynthAccess.exe".
 2. Para consultar el manual completo accesible, abra "MANUAL.html" o
    pulse la tecla F1 dentro de la aplicación.
 3. Para ver la lista completa de atajos de teclado, pulse Shift + F1.

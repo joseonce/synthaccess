@@ -280,7 +280,6 @@ Remove-Item -Path $WorkDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # 6. Relaunch updated SynthAccess.exe
 $exePath = Join-Path $TargetDir 'SynthAccess.exe'
-if (-not (Test-Path $exePath)) { $exePath = Join-Path $TargetDir 'SyncAccesible.exe' }
 Start-Process -FilePath $exePath -WorkingDirectory $TargetDir
 )PS";
 
