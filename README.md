@@ -1,9 +1,9 @@
-# SyncAccesible (C++ Nativo) - Sincronizador Gráfico Ultraligero y Accesible
+# SynthAccess (C++ Nativo) - Sincronizador Gráfico Ultraligero y Accesible
 
 **Autor y Desarrollador:** José Manuel Fernández Cortés  
 **Año:** 2026  
 
-**SyncAccesible (C++)** es una aplicación nativa en C++ y Win32 API desarrollada por **José Manuel Fernández Cortés**, diseñada como alternativa ultraligera y **100% accesible** a *FreeFileSync*. Permite gestionar **proyectos independientes**, sincronizar **pares de carpetas uno a continuación de otro en serie**, y encadenar **múltiples proyectos en una cola de ejecución por lotes**.
+**SynthAccess** es una aplicación nativa en C++ y Win32 API desarrollada por **José Manuel Fernández Cortés**, diseñada como alternativa ultraligera y **100% accesible** a *FreeFileSync*. Permite gestionar **proyectos independientes**, sincronizar **pares de carpetas uno a continuación de otro en serie**, y encadenar **múltiples proyectos en una cola de ejecución por lotes**.
 
 ---
 
